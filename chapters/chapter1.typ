@@ -1,4 +1,7 @@
 #import "../template.typ": *
+#import "@preview/fletcher:0.5.8" as fletcher: diagram, node, edge
+#import fletcher.shapes: diamond
+
 
 #let Chapter1() = [
 
@@ -187,16 +190,58 @@ Before investing in a fine-tuning pipeline, evaluate whether the problem actuall
 *The decision flowchart:*
 
 #figure(
-  image("../diagrams/01-decision-flowchart.png", width: 100%),
-  caption: [When to Fine-Tune: Decision Flowchart],
+  caption: "When to Fine-Tune: Decision Flowchart",
+  diagram(
+    node-defocus: 0,
+    node-outset: 3pt,
+    spacing: (1cm, 2cm),
+    edge-stroke: 1pt,
+    crossing-thickness: 5,
+    mark-scale: 70%,
+    node-fill: luma(97%),
+    node-inset: 10pt,
+    node-stroke: 0.5pt,
+    node((0,0), [Does the base model\ already know the answer?], shape: diamond, fill: aqua, stroke: 0.5pt),
+
+    node((-0.75,1), [Is the format/tone/\ structure wrong?], shape: diamond, fill: aqua, inset: 8pt),
+    node((0.75,1), [Is the missing knowledge\ in retrievable documents?], shape: diamond, fill: aqua, stroke: 0.5pt),
+
+    node((-1.5,2), [Prompt Engineering\ (Try this first)], fill: lime, inset: 8pt),
+    node((-0.5,2), [You're done #sym.checkmark], fill: rgb(177, 14, 201, 25%), ),
+    node((0.25,2), [RAG], fill: lime),
+    node((1.25,2), [Is it about\ behaviour/style/domain\ language?], shape: diamond, fill: aqua, stroke: 0.5pt, inset: 2pt),
+
+    node((0.5,2.85), [Fine-tuning], fill: lime),
+    node((1.5,2.85), "Re-evaluate the problem"),
+
+
+  {
+    let quad(a, b, label, paint, ..args) = {
+      paint = paint.darken(25%)
+      edge(a, b, text(paint, label), "-|>", stroke: paint, label-side: center, ..args)
+    }
+
+    quad((0,0), (-0.75,1), "Yes", green)
+    quad((-0.75,1), (-1.5,2), "Yes", green, label-pos: 0.3)
+    quad((+0.75,1), (+0.25,2), "Yes", green, label-pos: 0.3)
+    quad((+1,2), (+0.5,2.85), "Yes", green, label-pos: 0.3)
+
+    quad((0,0), (0.75,1), "No", red)
+    quad((-0.75, 1), (-0.5, 2), "No", red, label-pos: 0.3)
+    quad((+0.75,1), (+1.5,2), "No", red)
+    quad((+1,2), (+1.5,2.85), "No", red, label-pos: 0.3, bend: 35deg)
+  },
 )
+)
+
+\
 
 *Common anti-patterns (when fine-tuning is the wrong choice):*
 
-- *"The model doesn't know about our product"* → RAG is almost always better here. Product information changes; fine-tuned knowledge is frozen at training time.
-- *"We want the model to always respond in JSON"* → Try constrained decoding (Outlines, Instructor, vLLM guided decoding) or structured output APIs first. This is cheaper and more reliable than fine-tuning for format compliance alone.
-- *"We have 50 examples"* → This is too few for meaningful fine-tuning. Invest in prompt engineering with few-shot examples, or generate synthetic training data to reach 500+ examples before fine-tuning.
-- *"We want better accuracy on a benchmark"* → If the benchmark is contaminated or the improvement is marginal, fine-tuning may be overfitting to the test set rather than genuinely improving capability.
+- *"The model doesn't know about our product"* #sym.arrow RAG is almost always better here. Product information changes; fine-tuned knowledge is frozen at training time.
+- *"We want the model to always respond in JSON"* #sym.arrow Try constrained decoding (Outlines, Instructor, vLLM guided decoding) or structured output APIs first. This is cheaper and more reliable than fine-tuning for format compliance alone.
+- *"We have 50 examples"* #sym.arrow This is too few for meaningful fine-tuning. Invest in prompt engineering with few-shot examples, or generate synthetic training data to reach 500+ examples before fine-tuning.
+- *"We want better accuracy on a benchmark"* #sym.arrow If the benchmark is contaminated or the improvement is marginal, fine-tuning may be overfitting to the test set rather than genuinely improving capability.
 
 #blockquote[
   *Rule of thumb:* Try prompt engineering first (hours), then RAG (days), then fine-tuning (weeks). Each subsequent approach requires more investment but solves problems the previous one cannot. Fine-tuning is the right choice when you've exhausted the cheaper alternatives and need to change the model's fundamental behavior, not just its knowledge.
